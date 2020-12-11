@@ -33,19 +33,8 @@ func part1(_ input: String) -> Int {
                     continue
                 }
                 
-                let directions = [
-                    Map2DCoord.upLeft,
-                    Map2DCoord.up,
-                    Map2DCoord.upRight,
-                    Map2DCoord.right,
-                    Map2DCoord.downRight,
-                    Map2DCoord.down,
-                    Map2DCoord.downLeft,
-                    Map2DCoord.left
-                ]
-                
                 var occupied = 0
-                for direction in directions {
+                for direction in Map2DCoord.cartesianDirections {
                     let val = oldMap.get(current + direction)
                     if val == "#" {
                         occupied += 1
@@ -116,19 +105,8 @@ func part2(_ input: String) -> Int {
                     continue
                 }
                 
-                let directions = [
-                    Map2DCoord.upLeft,
-                    Map2DCoord.up,
-                    Map2DCoord.upRight,
-                    Map2DCoord.right,
-                    Map2DCoord.downRight,
-                    Map2DCoord.down,
-                    Map2DCoord.downLeft,
-                    Map2DCoord.left
-                ]
-                
                 var occupied = 0
-                for direction in directions {
+                for direction in Map2DCoord.cartesianDirections {
                     var coord = current + direction
                     var val = oldMap.get(coord)
                     

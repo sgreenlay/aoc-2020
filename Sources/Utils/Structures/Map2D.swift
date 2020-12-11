@@ -26,6 +26,24 @@ public struct Map2DCoord: Hashable {
     public static let upRight = Map2DCoord(x: 1, y: -1)
     public static let downLeft = Map2DCoord(x: -1, y: 1)
     public static let downRight = Map2DCoord(x: 1, y: 1)
+    
+    public static let cardinalDirections = [
+        Map2DCoord.up,
+        Map2DCoord.right,
+        Map2DCoord.down,
+        Map2DCoord.left
+    ]
+    
+    public static let cartesianDirections = [
+        Map2DCoord.upLeft,
+        Map2DCoord.up,
+        Map2DCoord.upRight,
+        Map2DCoord.right,
+        Map2DCoord.downRight,
+        Map2DCoord.down,
+        Map2DCoord.downLeft,
+        Map2DCoord.left
+    ]
 
     public static func ==(lhs: Map2DCoord, rhs: Map2DCoord) -> Bool {
         return lhs.x == rhs.x && lhs.y == rhs.y
