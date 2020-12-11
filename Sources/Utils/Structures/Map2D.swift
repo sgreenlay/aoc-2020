@@ -44,10 +44,10 @@ public struct Map2DCoord: Hashable {
 public struct Map2D<T> {
     var data:[Map2DCoord:T] = [Map2DCoord:T]()
 
-    var minX = 0
-    var maxX = 0
-    var minY = 0
-    var maxY = 0
+    public var minX = 0
+    public var maxX = 0
+    public var minY = 0
+    public var maxY = 0
 
     public init() {
     }
