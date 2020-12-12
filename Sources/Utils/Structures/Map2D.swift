@@ -1,6 +1,6 @@
 public struct Map2DCoord: Hashable {
-    var x:Int
-    var y:Int
+    public var x:Int
+    public var y:Int
 
     public init(x: Int, y: Int) {
         self.x = x
@@ -14,6 +14,86 @@ public struct Map2DCoord: Hashable {
     public func manhattenDistance(_ to: Map2DCoord) -> Int {
         return abs(self.x - to.x) + abs(self.y - to.y)
     }
+    
+    public mutating func turn(counterClockwise: Int) {
+        turn(clockwise: -counterClockwise)
+    }
+    
+    public mutating func turn(clockwise: Int) {
+        var relative = clockwise % 360
+        if relative < 0 {
+            relative += 360
+        }
+        
+        switch self {
+            case Map2DCoord.north:
+                switch relative {
+                    case 0:
+                        break
+                    case 90:
+                        self = Map2DCoord.east
+                        break
+                    case 180:
+                        self = Map2DCoord.south
+                        break
+                    case 270:
+                        self = Map2DCoord.west
+                        break
+                    default:
+                        fatalError()
+                }
+            case Map2DCoord.east:
+                switch relative {
+                    case 0:
+                        break
+                    case 90:
+                        self = Map2DCoord.south
+                        break
+                    case 180:
+                        self = Map2DCoord.west
+                        break
+                    case 270:
+                        self = Map2DCoord.north
+                        break
+                    default:
+                        fatalError()
+                }
+            case Map2DCoord.south:
+                switch relative {
+                    case 0:
+                        break
+                    case 90:
+                        self = Map2DCoord.west
+                        break
+                    case 180:
+                        self = Map2DCoord.north
+                        break
+                    case 270:
+                        self = Map2DCoord.east
+                        break
+                    default:
+                        fatalError()
+                }
+            case Map2DCoord.west:
+                switch relative {
+                    case 0:
+                        break
+                    case 90:
+                        self = Map2DCoord.north
+                        break
+                    case 180:
+                        self = Map2DCoord.east
+                        break
+                    case 270:
+                        self = Map2DCoord.south
+                        break
+                    default:
+                        fatalError()
+                }
+            default:
+                fatalError()
+        }
+    }
 
     public static let zero = Map2DCoord(x: 0, y: 0)
 
@@ -26,6 +106,16 @@ public struct Map2DCoord: Hashable {
     public static let upRight = Map2DCoord(x: 1, y: -1)
     public static let downLeft = Map2DCoord(x: -1, y: 1)
     public static let downRight = Map2DCoord(x: 1, y: 1)
+    
+    public static let north = Map2DCoord(x: 0, y: -1)
+    public static let south = Map2DCoord(x: 0, y: 1)
+    public static let west = Map2DCoord(x: -1, y: 0)
+    public static let east = Map2DCoord(x: 1, y: 0)
+    
+    public static let northWest = Map2DCoord(x: -1, y: -1)
+    public static let northEast = Map2DCoord(x: 1, y: -1)
+    public static let southWest = Map2DCoord(x: -1, y: 1)
+    public static let southEast = Map2DCoord(x: 1, y: 1)
     
     public static let cardinalDirections = [
         Map2DCoord.up,
