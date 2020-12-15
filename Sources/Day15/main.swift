@@ -36,25 +36,25 @@ func part1(_ input: String) -> Int {
     return nthNumberSpoken(input, n: 2020)
 }
 
-assert(part1("0,3,6") == 436)
-assert(part1("1,3,2") == 1)
-assert(part1("2,1,3") == 10)
-assert(part1("1,2,3") == 27)
-assert(part1("2,3,1") == 78)
-assert(part1("3,2,1") == 438)
-assert(part1("3,1,2") == 1836)
+try! test(part1("0,3,6") == 436, "part1 0,3,6")
+try! test(part1("1,3,2") == 1, "part1 1,3,2")
+try! test(part1("2,1,3") == 10, "part1 2,1,3")
+try! test(part1("1,2,3") == 27, "part1 1,2,3")
+try! test(part1("2,3,1") == 78, "part1 2,3,1")
+try! test(part1("3,2,1") == 438, "part1 3,2,1")
+try! test(part1("3,1,2") == 1836, "part1 3,1,2")
 
 func part2(_ input: String) -> Int {
     return nthNumberSpoken(input, n: 30_000_000)
 }
 
-assert(part2("0,3,6") == 175594)
-assert(part2("1,3,2") == 2578)
-assert(part2("2,1,3") == 3544142)
-assert(part2("1,2,3") == 261214)
-assert(part2("2,3,1") == 6895259)
-assert(part2("3,2,1") == 18)
-assert(part2("3,1,2") == 362)
+try! test(part2("0,3,6") == 175594, "part2 0,3,6")
+try! test(part2("1,3,2") == 2578, "part2 1,3,2")
+try! test(part2("2,1,3") == 3544142, "part2 2,1,3")
+try! test(part2("1,2,3") == 261214, "part2 1,2,3")
+try! test(part2("2,3,1") == 6895259, "part2 2,3,1")
+try! test(part2("3,2,1") == 18, "part2 3,2,1")
+try! test(part2("3,1,2") == 362, "part2 3,1,2")
 
 let input = try! String(contentsOfFile: "input/day15.txt", encoding: String.Encoding.utf8)
 
