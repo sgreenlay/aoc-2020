@@ -26,10 +26,6 @@ public struct MapNDCoord : Hashable {
         coordinates.remove(at: 0)
         return coordinates.map({ MapNDCoord(coordinates: $0) })
     }
-    
-    public func neighbours() -> [MapNDCoord] {
-        return MapNDCoord.cartesianDirections(dimensions: coordinates.count).map({ $0 + self })
-    }
 
     public static func ==(lhs: MapNDCoord, rhs: MapNDCoord) -> Bool {
         assert(lhs.coordinates.count == rhs.coordinates.count)

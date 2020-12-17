@@ -21,6 +21,7 @@ func parseInput(_ input: String, dimensions: Int) -> MapND<Character> {
 
 func part1(_ input: String) -> Int {
     let starting = parseInput(input, dimensions: 3)
+    let directions = MapNDCoord.cartesianDirections(dimensions: 3)
     
     var map: MapND<Character> = starting
     for _ in 1...6 {
@@ -30,7 +31,7 @@ func part1(_ input: String) -> Int {
             for y in map.mins[1]-1...map.maxes[1]+1 {
                 for x in map.mins[0]-1...map.maxes[0]+1 {
                     let current = MapNDCoord(coordinates: [x, y, z])
-                    let adjacent = current.neighbours()
+                    let adjacent = directions.map({ $0 + current })
                     
                     let active = adjacent.reduce(0, {
                         guard let value = map.get($1) else {
@@ -87,6 +88,7 @@ try! test(part1("""
 
 func part2(_ input: String) -> Int {
     let starting = parseInput(input, dimensions: 4)
+    let directions = MapNDCoord.cartesianDirections(dimensions: 4)
     
     var map: MapND<Character> = starting
     for _ in 1...6 {
@@ -97,7 +99,7 @@ func part2(_ input: String) -> Int {
                 for y in map.mins[1]-1...map.maxes[1]+1 {
                     for x in map.mins[0]-1...map.maxes[0]+1 {
                         let current = MapNDCoord(coordinates: [x, y, z, w])
-                        let adjacent = current.neighbours()
+                        let adjacent = directions.map({ $0 + current })
                         
                         let active = adjacent.reduce(0, {
                             guard let value = map.get($1) else {
