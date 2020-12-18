@@ -1,121 +1,78 @@
 import Foundation
 import Utils
 
-enum Token {
-    case Number(Int)
-    case Add
-    case Multiply
-    case OpenParen
-    case CloseParen
-}
-
-func parseInput(_ input: String) -> [[Token]] {
+func parseInput(_ input: String) -> [String] {
     return input
         .trimmingCharacters(in: .whitespacesAndNewlines)
         .components(separatedBy: "\n")
-        .map({
-            return Array($0
-                .components(separatedBy: " ")
-                .map({ (input: String) -> [Token] in
-                    switch input {
-                        case "*":
-                            return [.Multiply]
-                        case "+":
-                            return [.Add]
-                        default:
-                            var tokens = [Token]()
-                            let scanner = Scanner(string: input)
-                            
-                            while let _ = scanner.scanString("(") {
-                                tokens.append(.OpenParen)
-                            }
-                            let value = scanner.scanInt()!
-                            tokens.append(.Number(value))
-                            while let _ = scanner.scanString(")") {
-                                tokens.append(.CloseParen)
-                            }
-                            return tokens
-                    }
-                })
-                .joined()
-            )
-        })
 }
 
-func reduce(_ input: [Token]) -> Token {
-    var value: Int
-    switch input[0] {
-        case .Number(let n):
-                value = n
-        default:
-            fatalError()
-    }
+func reduce(_ input: String, orderOfOperations: [CharacterSet]) -> String {
+    var tokens = input.components(separatedBy: " ")
     
-    var i = 1
-    while i < input.count {
-        let op = input[i]
-        i += 1
+    for operations in orderOfOperations {
+        var i = 0
         
-        var otherValue: Int
-        switch input[i] {
-            case .Number(let n):
-                otherValue = n
-            default:
-                fatalError()
-        }
-        i += 1
-        
-        switch op {
-            case .Add:
-                value += otherValue
-            case .Multiply:
-                value *= otherValue
-            default:
-                fatalError()
-        }
-    }
-    return .Number(value)
-}
+        while i < tokens.count - 1 {
+            let a = tokens[i].asInt()!
+            i += 1
+            
+            let op = tokens[i].unicodeScalars.first!
+            i += 1
+            
+            let b = tokens[i].asInt()!
+            
+            if operations.contains(op) {
+                var c: Int
+                switch op {
+                    case "+":
+                        c = a + b
+                    case "*":
+                        c = a * b
+                    default:
+                        fatalError()
+                }
+                tokens.remove(at: i)
+                i -= 1
 
-func eval(_ input: [Token]) -> Int {
-    var stack = [[Token]]()
-    for token in input {
-        switch token {
-        case .Multiply:
-            fallthrough
-        case .Add:
-            fallthrough
-        case .Number(_):
-            if stack.isEmpty {
-                stack.append([token])
-            } else {
-                stack[stack.count - 1].append(token)
-            }
-        case .OpenParen:
-            stack.append([])
-        case .CloseParen:
-            let closure = reduce(stack.popLast()!)
-            if stack.isEmpty {
-                stack.append([closure])
-            } else {
-                stack[stack.count - 1].append(closure)
+                tokens.remove(at: i)
+                i -= 1
+                
+                tokens[i] = "\(c)"
             }
         }
     }
-    if stack.count != 1 {
+    if tokens.count != 1 {
         fatalError()
     }
+    return tokens.first!
+}
 
-    switch reduce(stack.first!){
-        case .Number(let n):
-            return n
+func eval(_ input: String, orderOfOperations: [CharacterSet]) -> Int {
+    var stack = [String]()
+    var current = ""
+    
+    for ch in input {
+        switch ch {
+        case "(":
+            stack.append(current)
+            current = ""
+        case ")":
+            var last = stack.popLast()!
+            last.append(reduce(current, orderOfOperations: orderOfOperations))
+            current = last
         default:
-            fatalError()
+            current.append(ch)
+        }
     }
+    guard stack.count == 0 && current.count > 0 else {
+        fatalError()
+    }
+    return reduce(current, orderOfOperations: orderOfOperations).asInt()!
 }
 
 func part1(_ input: String) -> Int {
-    return parseInput(input).reduce(0, { $0 + eval($1) })
+    return parseInput(input).reduce(0, { $0 + eval($1, orderOfOperations: [CharacterSet(["+", "*"])]) })
 }
 
 try! test(part1("1 + 2 * 3 + 4 * 5 + 6") == 71, "part1")
@@ -125,7 +82,20 @@ try! test(part1("5 + (8 * 3 + 9 + 3 * 4 * 3)") == 437, "part1")
 try! test(part1("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))") == 12240, "part1")
 try! test(part1("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2") == 13632, "part1")
 
+func part2(_ input: String) -> Int {
+    return parseInput(input).reduce(0, {
+        $0 + eval($1, orderOfOperations: [CharacterSet(["+"]), CharacterSet(["*"])])
+    })
+}
+
+try! test(part2("1 + 2 * 3 + 4 * 5 + 6") == 231, "part2")
+try! test(part2("1 + (2 * 3) + (4 * (5 + 6))") == 51, "part2")
+try! test(part2("2 * 3 + (4 * 5)") == 46, "part2")
+try! test(part2("5 + (8 * 3 + 9 + 3 * 4 * 3)") == 1445, "part2")
+try! test(part2("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))") == 669060, "part2")
+try! test(part2("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2") == 23340, "part2")
+ 
 let input = try! String(contentsOfFile: "input/day18.txt", encoding: String.Encoding.utf8)
 
 print("\(part1(input))")
-//print("\(part2(input))")
+print("\(part2(input))")
