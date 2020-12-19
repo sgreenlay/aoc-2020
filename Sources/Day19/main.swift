@@ -46,41 +46,32 @@ func parseInput(_ input: String) -> ([Int: Rule], [String]) {
     return (rules, cases)
 }
 
-func possibleMatches(_ input: String, rule: Int, rules: [Int: Rule]) -> [String] {
+func matches(_ input: String, index: Int, rule: Int, rules: [Int: Rule]) -> [Int] {
+    if index >= input.count {
+        return []
+    }
+    
     switch rules[rule]! {
         case .MatchCharacter(let ch):
-            if input.characterAt(offset: 0) == ch {
-                return [String(input.suffix(from: input.indexAt(offset: 1)))]
+            if input.characterAt(offset: index) == ch {
+                return [index + 1]
             }
             return []
         case .MatchOneOf(let possibilities):
-            var possible = [String]()
-            for toMatch in possibilities {
-                var starts = [input]
-                for rule in toMatch {
-                    var nextStarts = [String]()
-                    for start in starts {
-                        if start == "" {
-                            break
-                        }
-                        nextStarts.append(contentsOf: possibleMatches(start, rule: rule, rules: rules))
-                    }
-                    starts = nextStarts
-                }
-                possible.append(contentsOf: starts)
-            }
-            return possible
+            return possibilities.flatMap({
+                return $0.reduce([index], { (indicies, rule) in
+                    indicies.flatMap({ matches(input, index: $0, rule: rule, rules: rules) })
+                })
+            })
     }
-}
-
-func isMatch(_ input: String, rule: Int, rules: [Int: Rule]) -> Bool {
-    let matches = possibleMatches(input, rule: rule, rules: rules)
-    return matches.first(where: { $0 == "" }) != nil
 }
 
 func part1(_ input: String) -> Int {
     let (rules, cases) = parseInput(input)
-    let valid = cases.filter({ isMatch($0, rule: 0, rules: rules) })
+    let valid = cases.filter({ testCase in
+        let indicies = matches(testCase, index: 0, rule: 0, rules: rules)
+        return indicies.first(where: { $0 == testCase.count }) != nil
+    })
     return valid.count
 }
 
@@ -159,7 +150,10 @@ func part2(_ input: String) -> Int {
     rules[8] = .MatchOneOf([[42], [42, 8]])
     rules[11] = .MatchOneOf([[42, 31], [42, 11, 31]])
     
-    let valid = cases.filter({ isMatch($0, rule: 0, rules: rules) })
+    let valid = cases.filter({ testCase in
+        let indicies = matches(testCase, index: 0, rule: 0, rules: rules)
+        return indicies.first(where: { $0 == testCase.count }) != nil
+    })
     return valid.count
 }
 
