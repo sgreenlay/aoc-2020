@@ -28,6 +28,40 @@ enum Side {
     }
 }
 
+struct SideMapping : Hashable {
+    public var top: Side?
+    public var right: Side?
+    public var bottom: Side?
+    public var left: Side?
+    
+    public init() {
+        self.top = nil
+        self.right = nil
+        self.bottom = nil
+        self.left = nil
+    }
+    
+    public init(top: Side, right: Side, bottom: Side, left: Side) {
+        self.top = top
+        self.right = right
+        self.bottom = bottom
+        self.left = left
+    }
+    
+    public func map(side: Side) -> Side {
+        switch side {
+            case .Top:
+                return self.top!
+            case .Bottom:
+                return self.bottom!
+            case .Left:
+                return self.left!
+            case .Right:
+                return self.right!
+        }
+    }
+}
+
 struct Tile {
     var map: Map2D<Character>
     
@@ -56,6 +90,45 @@ struct Tile {
                 break
         }
         return mapSide
+    }
+    
+    public func apply(mapping: SideMapping) -> Tile {
+        var copy = map
+        
+        switch mapping {
+            case SideMapping(top: .Top, right: .Right, bottom: .Bottom, left: .Left):
+                break
+            case SideMapping(top: .Bottom, right: .Right, bottom: .Top, left: .Left):
+                copy.flip(x: false, y: true)
+                break
+            case SideMapping(top: .Top, right: .Left, bottom: .Bottom, left: .Right):
+                copy.flip(x: true, y: false)
+                break
+            case SideMapping(top: .Bottom, right: .Left, bottom: .Top, left: .Right):
+                copy.flip(x: true, y: true)
+                break
+            case SideMapping(top: .Left, right: .Top, bottom: .Right, left: .Bottom):
+                copy.rotate(clockwise: 90)
+                break
+            case SideMapping(top: .Bottom, right: .Left, bottom: .Top, left: .Right):
+                copy.rotate(clockwise: 180)
+                break
+            case SideMapping(top: .Right, right: .Bottom, bottom: .Left, left: .Top):
+                copy.rotate(clockwise: 270)
+                break
+            case SideMapping(top: .Right, right: .Top, bottom: .Left, left: .Bottom):
+                copy.rotate(clockwise: 90)
+                copy.flip(x: false, y: true)
+                break
+            case SideMapping(top: .Left, right: .Bottom, bottom: .Right, left: .Top):
+                copy.rotate(clockwise: 90)
+                copy.flip(x: true, y: false)
+                break
+            default:
+                fatalError()
+        }
+        
+        return Tile(map: copy)
     }
     
     public static func parse(_ input: String) -> (Int, Tile) {
@@ -246,33 +319,6 @@ Tile 3079:
 
 try! test(part1(testInput) == 20899048083289, "part1")
 
-struct SideMapping {
-    public var top: Side?
-    public var right: Side?
-    public var bottom: Side?
-    public var left: Side?
-    
-    public init() {
-        self.top = nil
-        self.right = nil
-        self.bottom = nil
-        self.left = nil
-    }
-    
-    public func map(side: Side) -> Side {
-        switch side {
-            case .Top:
-                return self.top!
-            case .Bottom:
-                return self.bottom!
-            case .Left:
-                return self.left!
-            case .Right:
-                return self.right!
-        }
-    }
-}
-
 func orient(_ tile: Tile, links: Dictionary<Side, Int>, top: Int?, left: Int?) -> (Tile, Dictionary<Side, Int>) {
     var sideMap = SideMapping()
     
@@ -363,33 +409,56 @@ func orient(_ tile: Tile, links: Dictionary<Side, Int>, top: Int?, left: Int?) -
     for side in Side.Sides {
         orientedLinks[side] = links[sideMap.map(side: side)]
     }
-    
-    // TODO: TILE
-    
-    return (tile, orientedLinks)
+
+    return (tile.apply(mapping: sideMap), orientedLinks)
 }
 
-func mapFromTiles(_ tiles: [Int: Tile]) -> Map2D<Character>? {
+func mapFromTiles(_ tiles: [Int: Tile]) -> Map2D<Character> {
     let links = tileLinks(tiles)
     
     let corners = links.filter({ (id, orientations) in orientations.count == 2 })
-
+    
     var id = corners.first!.key
     var top: Int? = nil
     var left: Int? = nil
     
     var rowStart = id
 
-    var orientedTileLinks = [Int: (Tile, Dictionary<Side, Int>)]()
+    var orientedTileLinks = [Int: Dictionary<Side, Int>]()
+    var map = Map2D<Character>()
+    
+    var y = 0
+    var x = 0
+    
+    let tileSize = tiles[id]!.map.width - 2
+    
     while orientedTileLinks.count < tiles.count {
-        orientedTileLinks[id] = orient(tiles[id]!, links: links[id]!, top: top, left: left)
+        var (orientedTile, orientedLinks) = orient(tiles[id]!, links: links[id]!, top: top, left: left)
+        
+        for y in orientedTile.map.minY...orientedTile.map.maxY {
+            let _ = orientedTile.map.remove(coordinate: Map2DCoord(x: orientedTile.map.minX, y: y))!
+            let _ = orientedTile.map.remove(coordinate: Map2DCoord(x: orientedTile.map.maxX, y: y))!
+        }
+        
+        for x in orientedTile.map.minX...orientedTile.map.maxX {
+            let _ = orientedTile.map.remove(coordinate: Map2DCoord(x: x, y: orientedTile.map.minY))!
+            let _ = orientedTile.map.remove(coordinate: Map2DCoord(x: x, y: orientedTile.map.maxY))!
+        }
+        
+        map.append(orientedTile.map, topLeft: Map2DCoord(x: x, y: y))
+        x += tileSize
+        
+        orientedTileLinks[id] = orientedLinks
 
-        let right = orientedTileLinks[id]!.1[.Right]
+        let right = orientedTileLinks[id]![.Right]
         if right == nil {
-            let next = orientedTileLinks[rowStart]!.1[.Bottom]
+            let next = orientedTileLinks[rowStart]![.Bottom]
             if next == nil {
                 break
             } else {
+                x = 0
+                y += tileSize
+
                 id = next!
                 
                 top = rowStart
@@ -403,7 +472,7 @@ func mapFromTiles(_ tiles: [Int: Tile]) -> Map2D<Character>? {
             }
 
             if top != nil {
-                top = orientedTileLinks[top!]!.1[.Right]
+                top = orientedTileLinks[top!]![.Right]
             }
             left = id
 
@@ -411,17 +480,73 @@ func mapFromTiles(_ tiles: [Int: Tile]) -> Map2D<Character>? {
         }
     }
 
-    return nil
+    return map
+}
+
+func removeDragons(_ map: inout Map2D<Character>, dragonMap: Map2D<Character>) -> Int {
+    let dragonInstances = map.findInstancesOf(dragonMap, ignoreBlanks: true)
+    if dragonInstances.count == 0 {
+        return 0
+    }
+    
+    for y in dragonMap.minY...dragonMap.maxY {
+        for x in dragonMap.minX...dragonMap.maxX {
+            let dragonCoord = Map2DCoord(x: x, y: y)
+            if dragonMap.get(dragonCoord) != nil {
+                let dx = x - dragonMap.minX
+                let dy = y - dragonMap.minY
+                for instance in dragonInstances {
+                    let mapCoord = Map2DCoord(x: instance.x + dx, y: instance.y + dy)
+                    map.set(coordinate: mapCoord, value: ".")
+                }
+            }
+        }
+    }
+    return dragonInstances.count
 }
 
 func part2(_ input: String) -> Int {
     let tiles = parseInput(input)
     
-    let map = mapFromTiles(tiles)
-    return 0
+    let dragon = """
+                      #
+    #    ##    ##    ###
+     #  #  #  #  #  #
+    """.components(separatedBy: "\n")
+
+    var dragonMap = Map2D<Character>()
+    for y in 0..<dragon.count {
+        for x in 0..<dragon[y].count {
+            let dragonTile = dragon[y].characterAt(offset: x)!
+            if dragonTile != " " {
+                dragonMap.set(coordinate: Map2DCoord(x: x, y: y), value: dragonTile)
+            }
+        }
+    }
+    
+    var map = mapFromTiles(tiles)
+    
+    var dragons = 0
+    for _ in [0, 90, 180, 270] {
+        dragons += removeDragons(&map, dragonMap: dragonMap)
+
+        dragonMap.flip(x: true, y: false)
+        dragons += removeDragons(&map, dragonMap: dragonMap)
+        
+        dragonMap.flip(x: false, y: true)
+        dragons += removeDragons(&map, dragonMap: dragonMap)
+        
+        dragonMap.flip(x: true, y: false)
+        dragons += removeDragons(&map, dragonMap: dragonMap)
+
+        dragonMap.flip(x: false, y: true)
+        map.rotate(clockwise: 90)
+    }
+    
+    return map.validCoordinates.filter({ map.get($0)! == "#" }).count
 }
 
-try! test(part2(testInput) == 0 /*273*/, "part2")
+try! test(part2(testInput) == 273, "part2")
 
 let input = try! String(contentsOfFile: "input/day20.txt", encoding: String.Encoding.utf8)
 

@@ -25,71 +25,24 @@ public struct Map2DCoord: Hashable {
             relative += 360
         }
         
-        switch self {
-            case Map2DCoord.north:
-                switch relative {
-                    case 0:
-                        break
-                    case 90:
-                        self = Map2DCoord.east
-                        break
-                    case 180:
-                        self = Map2DCoord.south
-                        break
-                    case 270:
-                        self = Map2DCoord.west
-                        break
-                    default:
-                        fatalError()
-                }
-            case Map2DCoord.east:
-                switch relative {
-                    case 0:
-                        break
-                    case 90:
-                        self = Map2DCoord.south
-                        break
-                    case 180:
-                        self = Map2DCoord.west
-                        break
-                    case 270:
-                        self = Map2DCoord.north
-                        break
-                    default:
-                        fatalError()
-                }
-            case Map2DCoord.south:
-                switch relative {
-                    case 0:
-                        break
-                    case 90:
-                        self = Map2DCoord.west
-                        break
-                    case 180:
-                        self = Map2DCoord.north
-                        break
-                    case 270:
-                        self = Map2DCoord.east
-                        break
-                    default:
-                        fatalError()
-                }
-            case Map2DCoord.west:
-                switch relative {
-                    case 0:
-                        break
-                    case 90:
-                        self = Map2DCoord.north
-                        break
-                    case 180:
-                        self = Map2DCoord.east
-                        break
-                    case 270:
-                        self = Map2DCoord.south
-                        break
-                    default:
-                        fatalError()
-                }
+        let x = self.x
+        let y = self.y
+        
+        switch relative {
+            case 0:
+                break
+            case 90:
+                self.x = -y
+                self.y = x
+                break
+            case 180:
+                self.x = -x
+                self.y = -y
+                break
+            case 270:
+                self.x = y
+                self.y = -x
+                break
             default:
                 fatalError()
         }
@@ -152,12 +105,31 @@ public struct Map2DCoord: Hashable {
 public struct Map2D<T> {
     var data:[Map2DCoord:T] = [Map2DCoord:T]()
 
-    public var minX = 0
-    public var maxX = 0
-    public var minY = 0
-    public var maxY = 0
-
     public init() {
+    }
+    
+    public var width: Int {
+        return maxX - minX + 1
+    }
+    public var height: Int {
+        return maxY - minY + 1
+    }
+    
+    public var minX: Int {
+        return data.keys.map({ $0.x }).min()!
+    }
+    public var maxX: Int {
+        return data.keys.map({ $0.x }).max()!
+    }
+    public var minY: Int {
+        return data.keys.map({ $0.y }).min()!
+    }
+    public var maxY: Int {
+        return data.keys.map({ $0.y }).max()!
+    }
+    
+    public var validCoordinates: [Map2DCoord] {
+        return Array(data.keys)
     }
 
     public func get(_ coord: Map2DCoord) -> T? {
@@ -165,10 +137,117 @@ public struct Map2D<T> {
     }
 
     public mutating func set(coordinate: Map2DCoord, value: T) {
-        minX = min(minX, coordinate.x)
-        maxX = max(maxX, coordinate.x)
-        minY = min(minY, coordinate.y)
-        maxY = max(maxY, coordinate.y)
         data[coordinate] = value
+    }
+    
+    public mutating func remove(coordinate: Map2DCoord) -> T? {
+        return data.removeValue(forKey: coordinate) ?? nil
+    }
+    
+    public mutating func append(_ other: Map2D<T>, topLeft: Map2DCoord? = nil) {
+        for y in other.minY...other.maxY {
+            for x in other.minX...other.maxX {
+                var coord = Map2DCoord(x: x, y: y)
+                let value = other.get(coord)
+                
+                if value != nil {
+                    if topLeft != nil {
+                        coord.x = topLeft!.x + x + (0 - other.minX)
+                        coord.y = topLeft!.y + y + (0 - other.minY)
+                    }
+                    self.set(coordinate: coord, value: value!)
+                }
+            }
+        }
+    }
+    
+    public mutating func rotate(counterClockwise: Int) {
+        rotate(clockwise: -counterClockwise)
+    }
+    
+    public mutating func rotate(clockwise: Int) {
+        var newData = [Map2DCoord:T]()
+
+        for (coord, value) in data {
+            var newCoord = coord
+            newCoord.turn(clockwise: clockwise)
+            
+            newData[newCoord] = value
+        }
+        
+        data = newData
+    }
+    
+    public mutating func flip(x: Bool, y: Bool) {
+        var newData = [Map2DCoord:T]()
+
+        for (coord, value) in data {
+            let newCoord = Map2DCoord(
+                x: x ? -coord.x : coord.x,
+                y: y ? -coord.y : coord.y
+            )
+            newData[newCoord] = value
+        }
+        
+        data = newData
+    }
+}
+
+public extension Map2D where T: Equatable {
+    func findInstancesOf(_ other: Map2D<T>, ignoreBlanks: Bool = false) -> [Map2DCoord] {
+        var instances = [Map2DCoord]()
+        
+        for y in self.minY...self.maxY {
+            for x in self.minX...self.maxX {
+                var isInstance = true
+                findInstances: for otherY in other.minY...other.maxY {
+                    for otherX in other.minX...other.maxX {
+                        let otherCoord = Map2DCoord(x: otherX, y: otherY)
+                        
+                        let otherValue = other.get(otherCoord)
+                        if otherValue == nil && ignoreBlanks {
+                            continue
+                        }
+                        
+                        let dx = otherCoord.x - other.minX
+                        let dy = otherCoord.y - other.minY
+                        
+                        let selfCoord = Map2DCoord(x: x + dx, y: y + dy)
+                        
+                        let selfValue = self.get(selfCoord)
+                        if otherValue != selfValue {
+                            isInstance = false
+                            break findInstances
+                        }
+                    }
+                }
+                if isInstance {
+                    let topLeft = Map2DCoord(x: x, y: y)
+                    instances.append(topLeft)
+                }
+            }
+        }
+        return instances
+    }
+}
+
+public extension Map2D where T == Character {
+    var description: String {
+        var output = ""
+        for y in self.minY...self.maxY {
+            var line = ""
+            for x in self.minX...self.maxX {
+                let coord = Map2DCoord(x: x, y: y)
+                let value = self.get(coord)
+                
+                if value == nil {
+                    line.append(" ")
+                } else {
+                    line.append(value!)
+                }
+            }
+            output += line + "\n"
+        }
+        return output
     }
 }
