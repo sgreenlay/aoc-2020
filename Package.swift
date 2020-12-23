@@ -77,7 +77,10 @@ let package = Package(
             targets: ["Day21"]),
         .executable(
             name: "Day22",
-            targets: ["Day22"])
+            targets: ["Day22"]),
+        .executable(
+            name: "Day23",
+            targets: ["Day23"])
     ],
     dependencies: [
     ],
@@ -150,6 +153,9 @@ let package = Package(
             dependencies: [ "Utils" ]),
         .target(
             name: "Day22",
+            dependencies: [ "Utils" ]),
+        .target(
+            name: "Day23",
             dependencies: [ "Utils" ])
     ]
 )
