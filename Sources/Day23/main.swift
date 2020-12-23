@@ -7,34 +7,16 @@ func parseInput(_ input: String) -> [Int] {
         .map({ $0.asInt()! })
 }
 
-func part1(_ input: String) -> String {
-    var cups = parseInput(input)
+func runGame(startingCups: [Int], iterations: Int) -> [Int] {
+    var cups = CircularBuffer<Int>(contentsOf: startingCups)
     
-    var selectedCup = cups[0]
-    for i in 1...100 {
-        var output = ""
-        for cup in cups {
-            if cup == selectedCup {
-                output += "(\(cup)) "
-            } else {
-                output += "\(cup) "
-            }
-        }
-        
-        print("Move \(i)")
-        print(output)
-        print("")
-        
+    var current = startingCups[0]
+    for i in 1...iterations {
         // The crab picks up the three cups that are immediately clockwise
         // of the current cup. They are removed from the circle; cup
         // spacing is adjusted as necessary to maintain the circle.
-        var removed = [Int]()
-        for _ in 1...3 {
-            let selectedIndex = cups.firstIndex(of: selectedCup)!
-            let remove = (selectedIndex + 1) % cups.count
-            removed.append(cups.remove(at: remove))
-        }
-        
+        let removed = cups.remove(after: current, count: 3)
+
         // The crab selects a destination cup: the cup with a label equal
         // to the current cup's label minus one. If this would select one
         // of the cups that was just picked up, the crab will keep
@@ -42,40 +24,58 @@ func part1(_ input: String) -> String {
         // If at any point in this process the value goes below the lowest
         // value on any cup's label, it wraps around to the highest value
         // on any cup's label instead.
-        var nextIndex: Int? = nil
-        var subtract = 1
-        while nextIndex == nil {
-            var findValue = selectedCup - subtract
-            if findValue <= 0 {
-                findValue = cups.max()!
+        var destination = current
+        repeat {
+            destination -= 1
+            if destination == 0 {
+                destination = startingCups.count
             }
-            nextIndex = cups.firstIndex(of: findValue)
-            subtract += 1
-        }
-        
-        // The crab places the cups it just picked up so that they are
-        // immediately clockwise of the destination cup. They keep the same
-        // order as when they were picked up.
-        cups.insert(contentsOf: removed, at: nextIndex! + 1)
+        } while !cups.contains(destination)
+        cups.insert(after: destination, contentsOf: removed)
         
         // The crab selects a new current cup: the cup which is immediately
         // clockwise of the current cup.
-        let selectedIndex = cups.firstIndex(of: selectedCup)!
-        selectedCup = cups[(selectedIndex + 1) % cups.count]
+        current = cups.after(current)
     }
-
-    let selectedIndex = cups.firstIndex(of: 1)!
     
+    return cups.toArray(startingWith: startingCups[0])
+}
+
+func part1(_ input: String) -> String {
+    let startingCups = parseInput(input)
+    let endingCups = runGame(startingCups: startingCups, iterations: 100)
+    
+    let selectedIndex = endingCups.firstIndex(of: 1)!
+
     var output = ""
-    for i in 1..<cups.count {
-        output += "\(cups[(selectedIndex + i) % cups.count])"
+    for i in 1..<endingCups.count {
+        output += "\(endingCups[(selectedIndex + i) % endingCups.count])"
     }
     return output
 }
 
 try! test(part1("389125467") == "67384529", "part1")
 
+func part2(_ input: String) -> Int {
+    var startingCups = parseInput(input)
+    for i in startingCups.count+1...1_000_000 {
+        startingCups.append(i)
+    }
+
+    let endingCups = runGame(startingCups: startingCups, iterations: 10_000_000)
+    
+    let selectedIndex = endingCups.firstIndex(of: 1)!
+    
+    let nextTwo = [
+        endingCups[(selectedIndex + 1) % endingCups.count],
+        endingCups[(selectedIndex + 2) % endingCups.count]
+    ]
+    return nextTwo.reduce(1, *)
+}
+
+try! test(part2("389125467") == 149245887792, "part2")
+
 let input = try! String(contentsOfFile: "input/day23.txt", encoding: String.Encoding.utf8)
 
 print("\(part1(input))")
-//print("\(part2(input))")
+print("\(part2(input))")
